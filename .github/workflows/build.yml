@@ -5,34 +5,32 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04 # Откатываемся на более старую Ubuntu, где Python 2 стабильнее
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Install Pure Base Tools
+    - name: Install Tools & Python 2
       run: |
         sudo apt-get update
-        # Оставляем только базовые пакеты, которые ТОЧНО не вызовут ошибку 100
-        sudo apt-get install -y bc bison build-essential curl flex g++ git gnupg gperf libxml2-utils unzip zip python3
+        # Устанавливаем базу и принудительно добавляем Python 2 для совместимости с Android 6
+        sudo apt-get install -y bc bison build-essential curl flex g++ git gnupg gperf libxml2-utils unzip zip python2 python-is-python2
 
-    - name: Install Google Repo Tool Manually
+    - name: Download Compatible Repo Tool
       run: |
-        # Скачиваем утилиту repo напрямую с серверов Google в обход apt-get
-        mkdir -p ~/bin
-        curl https://googleapis.com > ~/bin/repo
-        chmod a+x ~/bin/repo
-        sudo ln -sf ~/bin/repo /usr/usr/bin/repo || sudo ln -sf ~/bin/repo /usr/local/bin/repo
+        # Скачиваем стабильную версию repo прямо в системную директорию
+        sudo curl https://storage.googleapis.com/git-repo-downloads/repo -o /usr/local/bin/repo
+        sudo chmod a+x /usr/local/bin/repo
 
     - name: Configure Git
       run: |
         git config --global user.name "Nyxus-dev"
         git config --global user.email "nyxus@example.com"
 
-    - name: Initialize Minimal OmniROM Source
+    - name: Initialize TWRP Source
       run: |
         mkdir twrp && cd twrp
-        # Инициализируем чистый исходник TWRP
-        ~/bin/repo init --depth=1 -u https://github.com -b twrp-6.0
-        echo "Исходный код успешно подготовлен без системных ошибок!"
+        # Запуск инициализации с явным указанием использовать Python 2
+        python2 /usr/local/bin/repo init --depth=1 -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_omni.git -b twrp-6.0
+        echo "Конфликт версий Python успешно решен!"
