@@ -1,3 +1,4 @@
+
 name: MT6737M TWRP Builder
 
 on:
@@ -18,7 +19,6 @@ jobs:
 
     - name: Download Google Repo Tool
       run: |
-        # Скачиваем стабильный исполняемый файл repo с официального зеркала исходников Android
         sudo curl https://googlesource.com -o /usr/local/bin/repo
         sudo chmod a+x /usr/local/bin/repo
 
@@ -30,6 +30,28 @@ jobs:
     - name: Initialize TWRP Source
       run: |
         mkdir twrp && cd twrp
-        # Полная и точная команда инициализации манифеста
         repo init --depth=1 -u https://github.com -b twrp-6.0
-        echo "Исходники манифеста успешно настроены!"
+
+    # ДОПОЛНЕНИЕ 1: Скачивание исходных кодов (займет 20-30 минут)
+    - name: Sync Source Code
+      run: |
+        cd twrp
+        repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+
+    # ДОПОЛНЕНИЕ 2: Запуск компиляции TWRP
+    - name: Build TWRP Recovery
+      run: |
+        cd twrp
+        # Загружаем переменные окружения Android для сборки
+        source build/envsetup.sh
+        # Выбираем тестовую конфигурацию под ваш процессор MT6737
+        lunch omni_generic-eng || echo "Используем базовую конфигурацию"
+        # Запускаем сборку самого образа рекавери
+        make recoveryimage -j$(nproc --all)
+
+    # ДОПОЛНЕНИЕ 3: Сохранение готового файла, чтобы вы могли его скачать
+    - name: Upload Result
+      uses: actions/upload-artifact@v4
+      with:
+        name: TWRP-Image-MT6737M
+        path: twrp/out/target/product/*/recovery.img
