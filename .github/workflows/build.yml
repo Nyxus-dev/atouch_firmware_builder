@@ -5,29 +5,22 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04 # Переходим на актуальный рабочий сервер GitHub
+    runs-on: ubuntu-22.04 # Стабильный сервер GitHub
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Install Tools & Python 2
+    - name: Install Tools
       run: |
-        # Добавляем архивный репозиторий Ubuntu 20.04 (Focal), где еще есть Python 2
-        sudo apt-add-repository -y "deb http://ubuntu.com focal main universe"
         sudo apt-get update
-        
-        # Устанавливаем базу и принудительно добавляем Python 2
-        sudo apt-get install -y bc bison build-essential curl flex g++ git gnupg gperf libxml2-utils unzip zip python2
-        
-        # Настраиваем, чтобы по команде "python" или "python2" вызывался именно второй Python
-        sudo ln -sf /usr/bin/python2 /usr/bin/python
-        sudo ln -sf /usr/bin/python2 /usr/bin/python2
+        # Устанавливаем базовые инструменты для сборки Android/TWRP
+        sudo apt-get install -y bc bison build-essential curl flex g++ git gnupg gperf libxml2-utils unzip zip python3
 
-    - name: Download Compatible Repo Tool
+    - name: Download Google Repo Tool
       run: |
-        # Скачиваем стабильную версию repo прямо в системную директорию
-        sudo curl https://storage.googleapis.com/git-repo-downloads/repo -o /usr/local/bin/repo
+        # Скачиваем официальную утилиту repo в системную директорию
+        sudo curl https://googleapis.com -o /usr/local/bin/repo
         sudo chmod a+x /usr/local/bin/repo
 
     - name: Configure Git
@@ -38,6 +31,6 @@ jobs:
     - name: Initialize TWRP Source
       run: |
         mkdir twrp && cd twrp
-        # Запуск инициализации с явным указанием использовать Python 2
-        python2 /usr/local/bin/repo init --depth=1 -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_omni.git -b twrp-6.0
-        echo "Конфликт версий Python успешно решен!"
+        # Инициализируем исходники манифеста TWRP 6.0
+        repo init --depth=1 -u https://github.com -b twrp-6.0
+        echo "Исходники манифеста успешно настроены!"
