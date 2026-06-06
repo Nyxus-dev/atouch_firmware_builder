@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04 # Откатываемся на более старую Ubuntu, где Python 2 стабильнее
+    runs-on: ubuntu-22.04 # Переходим на актуальный рабочий сервер GitHub
 
     steps:
     - name: Checkout Repository
@@ -13,9 +13,16 @@ jobs:
 
     - name: Install Tools & Python 2
       run: |
+        # Добавляем архивный репозиторий Ubuntu 20.04 (Focal), где еще есть Python 2
+        sudo apt-add-repository -y "deb http://ubuntu.com focal main universe"
         sudo apt-get update
-        # Устанавливаем базу и принудительно добавляем Python 2 для совместимости с Android 6
-        sudo apt-get install -y bc bison build-essential curl flex g++ git gnupg gperf libxml2-utils unzip zip python2 python-is-python2
+        
+        # Устанавливаем базу и принудительно добавляем Python 2
+        sudo apt-get install -y bc bison build-essential curl flex g++ git gnupg gperf libxml2-utils unzip zip python2
+        
+        # Настраиваем, чтобы по команде "python" или "python2" вызывался именно второй Python
+        sudo ln -sf /usr/bin/python2 /usr/bin/python
+        sudo ln -sf /usr/bin/python2 /usr/bin/python2
 
     - name: Download Compatible Repo Tool
       run: |
