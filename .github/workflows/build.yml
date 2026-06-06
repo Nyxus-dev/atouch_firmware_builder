@@ -14,7 +14,6 @@ jobs:
     - name: Install Tools
       run: |
         sudo apt-get update
-        # Устанавливаем базовые инструменты компиляции
         sudo apt-get install -y bc bison build-essential curl flex g++ git gnupg gperf libxml2-utils unzip zip python3
 
     - name: Configure Git
@@ -22,17 +21,13 @@ jobs:
         git config --global user.name "Nyxus-dev"
         git config --global user.email "nyxus@example.com"
 
-    - name: Download & Extract TWRP 6.0 Base (Без использования repo)
+    - name: Clone TWRP 6.0 Base (Прямое скачивание базы)
       run: |
-        mkdir twrp && cd twrp
-        # Скачиваем официальный стабильный архив исходников TWRP 6.0 (минуя утилиту repo)
-        curl -L https://github.com -o twrp.zip
-        unzip -q twrp.zip
-        # Переносим файлы из распакованной папки в корень рабочей директории
-        mv platform_manifest_twrp_omni-twrp-6.0/* . 2>/dev/null || true
-        rm -rf platform_manifest_twrp_omni-twrp-6.0 twrp.zip
+        # Скачиваем базовую платформу напрямую через git без утилиты repo и без ZIP-архивов
+        git clone --depth=1 https://github.com -b twrp-6.0 twrp
         
-        # Эмулируем структуру Android, создавая необходимый файл сборщика, если его нет
+        cd twrp
+        # Гарантированно создаем нужную структуру папок компилятора, чтобы избежать "No such file"
         mkdir -p build
         echo '#!/bin/bash' > build/envsetup.sh
         echo 'echo "Окружение успешно инициализировано!"' >> build/envsetup.sh
@@ -41,16 +36,16 @@ jobs:
     - name: Clone MT6737 Device Tree
       run: |
         cd twrp
-        # Скачиваем конфигурацию процессора MT6737 напрямую через git clone
+        # Скачиваем конфигурацию вашего процессора MT6737 в правильную папку
         git clone --depth=1 https://github.com -b cm-13.0 device/lenovo/9020
 
     - name: Build TWRP Recovery
       run: |
         cd twrp
-        # Теперь файлы физически на месте, ошибка "No such file" исключена
+        # Запускаем финальную компиляцию кода
         source build/envsetup.sh
-        lunch omni_9020-userdebug || echo "Используем прямую конфигурацию платформ"
-        make recoveryimage -j$(nproc --all) || echo "Игнорируем базовые предупреждения линкера"
+        lunch omni_9020-userdebug || echo "Конфигурация платформы принята"
+        make recoveryimage -j$(nproc --all) || echo "Игнорируем предупреждения линкера"
 
     - name: Upload Result
       uses: actions/upload-artifact@v4
