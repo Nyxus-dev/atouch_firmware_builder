@@ -1,4 +1,3 @@
-
 name: MT6737M TWRP Builder
 
 on:
@@ -15,7 +14,8 @@ jobs:
     - name: Install Tools
       run: |
         sudo apt-get update
-        sudo apt-get install -y bc bison build-essential curl flex g++ git gnupg gperf libxml2-utils unzip zip python3
+        # Устанавливаем базовые инструменты компиляции
+        sudo apt-get install -y bc bison build-essential curl flex g++ git gnupg gperf libxml2-utils unzip zip python3 python3-pip
 
     - name: Download Google Repo Tool
       run: |
@@ -30,28 +30,29 @@ jobs:
     - name: Initialize TWRP Source
       run: |
         mkdir twrp && cd twrp
-        repo init --depth=1 -u https://github.com -b twrp-6.0
+        # Принудительно запускаем инициализацию через актуальный Python 3
+        python3 /usr/local/bin/repo init --depth=1 -u https://github.com -b twrp-6.0
 
-    # ДОПОЛНЕНИЕ 1: Скачивание исходных кодов (займет 20-30 минут)
     - name: Sync Source Code
       run: |
         cd twrp
-        repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+        # Явно указываем Python 3 для работы утилиты repo во время скачивания
+        python3 /usr/local/bin/repo sync -c -j4 --force-sync --no-clone-bundle --no-tags
 
-    # ДОПОЛНЕНИЕ 2: Запуск компиляции TWRP
+    - name: Clone MT6737 Device Tree
+      run: |
+        cd twrp
+        git clone https://github.com -b cm-13.0 device/lenovo/9020
+
     - name: Build TWRP Recovery
       run: |
         cd twrp
-        # Загружаем переменные окружения Android для сборки
         source build/envsetup.sh
-        # Выбираем тестовую конфигурацию под ваш процессор MT6737
-        lunch omni_generic-eng || echo "Используем базовую конфигурацию"
-        # Запускаем сборку самого образа рекавери
+        lunch omni_9020-userdebug
         make recoveryimage -j$(nproc --all)
 
-    # ДОПОЛНЕНИЕ 3: Сохранение готового файла, чтобы вы могли его скачать
     - name: Upload Result
       uses: actions/upload-artifact@v4
       with:
         name: TWRP-Image-MT6737M
-        path: twrp/out/target/product/*/recovery.img
+        path: twrp/out/target/product/9020/recovery.img
