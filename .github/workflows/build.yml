@@ -26,25 +26,26 @@ jobs:
         git config --global user.name "Nyxus-dev"
         git config --global user.email "nyxus@example.com"
 
-    - name: Initialize TWRP Source
+    - name: Initialize & Sync TWRP Source
       run: |
         mkdir twrp && cd twrp
+        # 1. Настраиваем базу TWRP
         python3 /usr/local/bin/repo init --depth=1 -u https://github.com -b twrp-6.0
-
-    - name: Sync Source Code
-      run: |
-        cd twrp
+        
+        # 2. Безопасно добавляем дерево MT6737 в локальный манифест, чтобы избежать ошибок git clone
+        mkdir -p .repo/local_manifests
+        echo '<?xml version="1.0" encoding="UTF-8"?>
+        <manifest>
+          <project name="lopestom/android_device_lenovo_9020" path="device/lenovo/9020" remote="github" revision="cm-13.0" />
+        </manifest>' > .repo/local_manifests/mt6737.xml
+        
+        # 3. Запускаем общее скачивание (база + дерево скачаются одновременно за 15-25 минут)
         python3 /usr/local/bin/repo sync -c -j4 --force-sync --no-clone-bundle --no-tags
-
-    - name: Clone MT6737 Device Tree
-      run: |
-        cd twrp
-        # Чистая команда клонирования в одну строку без разрывов
-        git clone https://github.com -b cm-13.0 device/lenovo/9020
 
     - name: Build TWRP Recovery
       run: |
         cd twrp
+        # Запускаем компиляцию — теперь все файлы гарантированно на месте
         source build/envsetup.sh
         lunch omni_9020-userdebug
         make recoveryimage -j$(nproc --all)
